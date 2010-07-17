@@ -1,5 +1,5 @@
 sys: require('sys')
-N: require('../lib/n')
+N: require('../../../index')
 Controller: N.Controller
 
 #### Actual Usage
