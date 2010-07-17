@@ -9,5 +9,4 @@ server: Connect.createServer Connect.logger()
 server.use "/posts", posts.connector
 server.use "/", Connect.errorHandler({dumpExceptions: false})
 
-
 server.listen 8080
