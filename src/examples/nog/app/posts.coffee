@@ -6,7 +6,6 @@ Controller: N.Controller
 posts: new Controller('posts')
 
 posts.GET "/", {}, (params) ->
-  sys.puts("IN INDEX")
   @render_and_respond "index"
 
 posts.GET "/:id", {}, (params) ->

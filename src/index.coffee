@@ -1,8 +1,10 @@
-Connect: require 'connect'
+Connect:      require 'connect'
 ConnectUtils: require 'connect/utils'
-Jade: require 'jade'
-Path: require 'path'
-Sherpa: require 'sherpa/connect'
+Jade:         require 'jade'
+Path:         require 'path'
+Sherpa:       require 'sherpa/connect'
+RenderMixin:  require './lib/render'
+
 sys: require 'sys'
 fs: require 'fs'
 startsWithAPeriod: /^\./
@@ -37,12 +39,17 @@ class Handler
     opts ?= {}
     opts.format ?= @format()
 
-    path: @controller.templatePathFor name, opts
-    opts.scope: this
-    if path
-      out: Jade.renderFile path, opts, fn
-    else
-      fn new Error("Template '${name}' not found")
+    context: {}
+    locals:  {
+      data:   @data
+      params: @params
+    }
+
+    try
+      fn null, @controller.renderTemplate name, opts, context, locals
+    catch err
+      fn err
+
 
   respond: (content, opts) ->
     opts ?= {}
@@ -75,14 +82,15 @@ class Controller
   constructor: (name, opts) ->
     opts ?= {}
     throw new Error("Controller Name Not Given") unless name
-    @name: name
+    @name:    name
     @options: opts
 
     @stack: Connect.createServer()
 
     @router: new Sherpa.Connect()
 
-    @connector: Connect.createServer(@stack, @router.connector())
+    @connect: (opts) ->
+      Connect.createServer(@stack, @router.connect(opts))
 
     @Handler: opts.Handler || Handler
     @templateCache: {}
@@ -116,33 +124,7 @@ class Controller
 
     @router[meth](route,opts).to(dispatcher)
 
-  templateNames: (name, opts) ->
-    opts ?= {}
-    fmt: opts.format || 'html'
-    [
-      "${name}.${fmt}.${process.connectEnv.name}"
-      "${name}.${fmt}"
-      name
-    ]
-
-  templatePathFor: (name, opts) ->
-    possible: @templateNames name, opts
-    existing: @templateCache[possible]
-    return existing if existing
-
-    for _root in @roots.reverse()
-      for viewPath in @paths.views.reverse()
-        for path in possible
-          try
-            fullPath: Path.join(_root, viewPath, "${path}.jade")
-            template: fs.statSync fullPath
-            @templateCache[possible]: fullPath
-            break
-          catch e
-            "noop"
-          break if @templateCache[possible]
-      break if @templateCache[possible]
-    @templateCache[possible]
+RenderMixin Controller
 
 N: {}
 module.exports: N
