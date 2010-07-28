@@ -6,10 +6,14 @@ Controller: N.Controller
 posts: new Controller('posts')
 
 posts.GET "/", {}, (params) ->
-  @render_and_respond "index"
+  @render_and_respond 'index'
+
+posts.GET "/wrapt_test", {}, (params) ->
+  @request.layout.content.main = "Hi There"
+  @respond @request.layout.layout()
 
 posts.GET "/:id", {}, (params) ->
-  @data.food: "Banana"
-  @render_and_respond "show"
+  @data.food: "Poo"
+  @render_and_respond 'show'
 
 module.exports: posts

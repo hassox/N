@@ -3,11 +3,13 @@ ConnectUtils: require 'connect/utils'
 Jade:         require 'jade'
 RenderMixin:  require './render'
 ViewContext:  require './viewContext'
+sys:          require 'sys'
 
 class WraptContext extends ViewContext
   @mixin: ViewContext.mixin
+
   constructor: (req, opts) ->
-    super(req, opts)
+    super(req,opts)
     @content: req.layout.content
 
 class Layouter
@@ -23,7 +25,7 @@ class Layouter
     @preventLayoutParam:  wrapt.preventLayoutParam
 
   format: () ->
-    req.format || @defaultFormat
+    @request.format || @defaultFormat
 
   viewContext: (opts) ->
     opts ?= {}
@@ -32,10 +34,40 @@ class Layouter
 
   render: (opts) ->
     opts.format ?= @format()
-    opts.scope  ?= viewContext opts
+    opts.scope  ?= @viewContext opts
+    scope:  opts.scope
+    locals: opts.locals
 
-    wrapt.renderTemplate  @templateName, opts
-    wrapt.template        @templateName, opts
+    delete opts.scope
+    delete opts.locals
+
+    try
+      @wrapt.renderTemplate  @templateName, opts, scope, locals
+    catch e
+      @content.main
+
+  layout: (opts) ->
+    opts ?= {}
+    if opts.templateName?
+      templateName: opts.templateName
+      delete opts.templateName
+    else
+      templateName: @templateName
+
+    opts.locals ?= {}
+    opts.scope  ?= @viewContext opts
+    scope:  opts.scope
+    locals: opts.locals
+
+    delete opts.scope
+    delete opts.locals
+
+    ConnectUtils.merge locals, {content: @content}
+
+    try
+      @wrapt.renderTemplate templateName, opts, scope, locals
+    catch e
+      @content.main
 
 class Wrapt
   constructor: (opts) ->
@@ -47,19 +79,22 @@ class Wrapt
         roots.push root
       roots
     )()
-    @paths: opts.paths || { views: ['views', 'views/layouts'] }
+    @roots.unshift __dirname
+
+    @paths: opts.paths || { views: ['app/views/layouts', 'views/layouts'] }
     @defaultFormat:       opts.defaultFormat || 'html'
     @defaultTemplateName: opts.defaultTemplateName || 'application'
     @preventLayoutParam:  opts.preventLayoutParam || '__layout'
     @templateCache:       {}
 
   connect: (opts) ->
+    self: this
     opts ?= {}
-    for option, value in ops
+    for option, value of opts
       this[option]: value
 
     (req, resp, next) ->
-      req.layout: new Layout(req, resp, this)
+      req.layout: new Layouter(req, resp, self)
       next()
 
 RenderMixin Wrapt

@@ -35,9 +35,20 @@ class Handler
   format: () ->
     @request.format || "html"
 
-  render: (name, opts, fn) ->
+  render: (name, opts, callback) ->
+    if not callback
+      callback:    opts
+      opts:  {}
+
     opts ?= {}
     opts.format ?= @format()
+    layout:
+
+    if opts.layout
+      useLayout: true
+      layout: opts.layout if not opts.layout == true
+    else
+      useLayout: false
 
     context: {}
     locals:  {
@@ -46,9 +57,14 @@ class Handler
     }
 
     try
-      fn null, @controller.renderTemplate name, opts, context, locals
+      if useLayout and @request.layout
+        @request.layout.content.main = @controller.renderTemplate name, opts, context, locals
+        @request.layout.templateName: layout if layout
+        callback null, @request.layout.layout()
+      else
+        callback null, @controller.renderTemplate name, opts, context, locals
     catch err
-      fn err
+      callback err
 
 
   respond: (content, opts) ->
@@ -65,7 +81,10 @@ class Handler
     @response.end()
 
   render_and_respond: (name, opts) ->
+    opts ?= {}
     self: this
+    opts.layout: true if opts.layout != false
+
     @render name, opts, (err, content) ->
       if err
         self.respond err.message, {status: 500}

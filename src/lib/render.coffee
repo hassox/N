@@ -39,6 +39,7 @@ renderTemplate: (name, opts, context, locals) ->
           catch e
             # TODO: Add some logging and or re-raise at this point if it's a
             # file not found
+            sys.puts e.message
             "noop"
           break if cache[key]
       break if cache[key]
