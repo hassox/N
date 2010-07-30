@@ -13,7 +13,7 @@ posts.GET "/wrapt_test", {}, (params) ->
   @respond @request.layout.layout()
 
 posts.GET "/:id", {}, (params) ->
-  @data.food: "Poo"
+  @data.food: "Different types of food!"
   @render_and_respond 'show'
 
 module.exports: posts
