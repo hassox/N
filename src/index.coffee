@@ -1,151 +1,40 @@
 Connect:      require 'connect'
-ConnectUtils: require 'connect/utils'
-Jade:         require 'jade'
-Path:         require 'path'
-Sherpa:       require 'sherpa/connect'
-RenderMixin:  require './lib/render'
-
+Controller:   require('./lib/controller').Controller
+Handler:      require('./lib/controller').Handler
+Wrapt:        require('./lib/wrapt')
 sys: require 'sys'
-fs: require 'fs'
-startsWithAPeriod: /^\./
-
-# HEADER CONSTANTS
-CONTENT_TYPE: 'Content-Type'
-
-class Handler
-  constructor: (req, resp, params, controller, next) ->
-    @request: req
-    @response: resp
-    @params: params
-    @controller: controller
-    @status: 200
-    @headers: {}
-    @data: {}
-    @next: next
-
-  content_type: (type) ->
-    if type
-      if not type.match(startsWithAPeriod)
-        type: ".${type}"
-    else
-      type: ".${@format()}"
-
-    @headers[CONTENT_TYPE] = ConnectUtils.mime.type(type)
-
-  format: () ->
-    @request.format || "html"
-
-  render: (name, opts, callback) ->
-    if not callback
-      callback:    opts
-      opts:  {}
-
-    opts ?= {}
-    opts.format ?= @format()
-    layout:
-
-    if opts.layout
-      useLayout: true
-      layout: opts.layout if not opts.layout == true
-    else
-      useLayout: false
-
-    context: {}
-    locals:  {
-      data:   @data
-      params: @params
-    }
-
-    try
-      if useLayout and @request.layout
-        @request.layout.content.main = @controller.renderTemplate name, opts, context, locals
-        @request.layout.templateName: layout if layout
-        callback null, @request.layout.layout()
-      else
-        callback null, @controller.renderTemplate name, opts, context, locals
-    catch err
-      callback err
-
-
-  respond: (content, opts) ->
-    opts ?= {}
-    @status: opts.status || @status
-
-    ConnectUtils.merge(@headers, opts.headers || {})
-
-    if not @headers[CONTENT_TYPE]
-      @content_type(opts.format)
-
-    @response.writeHead @status, @headers
-    @response.write content
-    @response.end()
-
-  render_and_respond: (name, opts) ->
-    opts ?= {}
-    self: this
-    opts.layout: true if opts.layout != false
-
-    @render name, opts, (err, content) ->
-      if err
-        self.respond err.message, {status: 500}
-      else
-        self.respond content
-
-  redirect: (url, status) ->
-    status ?= 302
-    @headers['Location'] = url
-    @status: status
-    @respond "Redirecting to ${url}"
-
-class Controller
-  constructor: (name, opts) ->
-    opts ?= {}
-    throw new Error("Controller Name Not Given") unless name
-    @name:    name
-    @options: opts
-
-    @stack: Connect.createServer()
-
-    @router: new Sherpa.Connect()
-
-    @connect: (opts) ->
-      Connect.createServer(@stack, @router.connect(opts))
-
-    @Handler: opts.Handler || Handler
-    @templateCache: {}
-    @roots: opts.roots || [process.cwd()]
-    @paths: opts.paths || {
-      views: [
-        "views"
-        "views/${name}"
-        "app/views"
-        "app/views/${name}"
-      ]
-    }
-
-  use: (args...) ->
-    @stack.use(args...)
-
-  GET     : (route, opts, fn) -> @handleRoute('GET'  ,    route, opts, fn)
-  POST    : (route, opts, fn) -> @handleRoute('POST' ,    route, opts, fn)
-  PUT     : (route, opts, fn) -> @handleRoute('PUT'  ,    route, opts, fn)
-  DELETE  : (route, otps, fn) -> @handleRoute('DELETE',   route, opts, fn)
-  OPTIONS : (route, opts, fn) -> @handleRoute('OPTIONS',  route, opts, fn)
-  HEAD    : (route, opts, fn) -> @handleRoute('HEAD',     route, opts, fn)
-  ANY     : (route, opts, fn) -> @handleRoute('ANY',      route, opts, fn)
-
-  handleRoute: (meth, route,  opts, fn) ->
-    self: this
-    dispatcher: (req, resp, next) ->
-      params:   req.sherpaResponse.params
-      handler:  new Handler(req, resp, params, self, next)
-      out:      fn.call(handler, params)
-
-    @router[meth](route,opts).to(dispatcher)
-
-RenderMixin Controller
 
 N: {}
-module.exports: N
 N.Controller: Controller
-N.Handler: Handler
+N.Handler:    Handler
+N.Wrapt:      Wrapt
+
+N.primeStack: []
+N.stackInstance: {}
+N.router: new Sherpa.Connect()
+
+N.use: (name, instance, path) ->
+  @primeStack.push name
+  @stackInstance[name] = {'instance': instance, 'path': path}
+
+N.connect: () ->
+  server: Connect.createServer()
+
+  for name in @primeStack
+    item: @stackInstance[name]
+    server.use(item.path || "/", item.instance)
+
+  server.use "/", @router.connect()
+  server
+
+N.mount: (app, path, opts) ->
+  @router.ANY(path,opts).matchPartially().to(app)
+
+N.mountController: (app, path, opts) ->
+  @mount(app.connect(), path, opts);
+
+# A default stack
+N.use N.Wrapt, new N.Wrapt().connect({roots:[process.cwd()]})
+
+module.exports: N
+

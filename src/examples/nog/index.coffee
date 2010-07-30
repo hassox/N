@@ -1,13 +1,9 @@
-Connect:  require 'connect'
-sys:      require 'sys'
-fs:       require 'fs'
-Wrapt:    require '../../lib/wrapt'
+Connect: require('connect')
+N: require '../../index'
 
-posts: require './app/posts'
-server: Connect.createServer Connect.logger()
+N.mountController require('./app/posts'), "/posts"
 
-server.use "/",   new Wrapt('nog').connect({roots:[__dirname]})
-server.use "/nog", posts.connect()
-#server.use "/", Connect.errorHandler({dumpExceptions: false})
+server: Connect.createServer  Connect.logger(), N.connect()
+server.use "/bar", require('./app/posts').connect()
 
 server.listen 8080

@@ -1,8 +1,11 @@
-Connect: require 'connect'
+Connect:      require 'connect'
 ConnectUtils: require 'connect/utils'
-Jade: require 'jade'
-Path: require 'path'
-Sherpa: require 'sherpa/connect'
+Jade:         require 'jade'
+Path:         require 'path'
+Sherpa:       require 'sherpa/connect'
+RenderMixin:  require './render'
+url:          require 'url'
+
 sys: require 'sys'
 fs: require 'fs'
 startsWithAPeriod: /^\./
@@ -12,6 +15,7 @@ CONTENT_TYPE: 'Content-Type'
 
 class Handler
   constructor: (req, resp, params, controller, next) ->
+    req.N ?= {}
     @request: req
     @response: resp
     @params: params
@@ -20,6 +24,14 @@ class Handler
     @headers: {}
     @data: {}
     @next: next
+
+    if req.N.url and req.N.url.query
+      @queryParams: req.N.url.query
+    else
+      req.N.url = url.parse req.url, true
+      @queryParams: req.N.url.query
+
+    @queryParams ?= {}
 
   content_type: (type) ->
     if type
@@ -33,16 +45,37 @@ class Handler
   format: () ->
     @request.format || "html"
 
-  render: (name, opts, fn) ->
+  render: (name, opts, callback) ->
+    if not callback
+      callback:    opts
+      opts:  {}
+
     opts ?= {}
     opts.format ?= @format()
+    layout:
 
-    path: @controller.templatePathFor name, opts
-    opts.scope: this
-    if path
-      out: Jade.renderFile path, opts, fn
+    if opts.layout
+      useLayout: true
+      layout: opts.layout if not opts.layout == true
     else
-      fn new Error("Template '${name}' not found")
+      useLayout: false
+
+    context: {}
+    locals:  {
+      data:   @data
+      params: @params
+    }
+
+    try
+      if useLayout and @request.layout
+        @request.layout.content.main = @controller.renderTemplate name, opts, context, locals
+        @request.layout.templateName: layout if layout
+        callback null, @request.layout.layout()
+      else
+        callback null, @controller.renderTemplate name, opts, context, locals
+    catch err
+      callback err
+
 
   respond: (content, opts) ->
     opts ?= {}
@@ -58,7 +91,10 @@ class Handler
     @response.end()
 
   render_and_respond: (name, opts) ->
+    opts ?= {}
     self: this
+    opts.layout: true if opts.layout != false
+
     @render name, opts, (err, content) ->
       if err
         self.respond err.message, {status: 500}
@@ -75,14 +111,15 @@ class Controller
   constructor: (name, opts) ->
     opts ?= {}
     throw new Error("Controller Name Not Given") unless name
-    @name: name
+    @name:    name
     @options: opts
 
     @stack: Connect.createServer()
 
     @router: new Sherpa.Connect()
 
-    @connector: Connect.createServer(@stack, @router.connector())
+    @connect: (opts) ->
+      Connect.createServer(@stack, @router.connect(opts))
 
     @Handler: opts.Handler || Handler
     @templateCache: {}
@@ -116,35 +153,7 @@ class Controller
 
     @router[meth](route,opts).to(dispatcher)
 
-  templateNames: (name, opts) ->
-    opts ?= {}
-    fmt: opts.format || 'html'
-    [
-      "${name}.${fmt}.${process.connectEnv.name}"
-      "${name}.${fmt}"
-      name
-    ]
+RenderMixin Controller
 
-  templatePathFor: (name, opts) ->
-    possible: @templateNames name, opts
-    existing: @templateCache[possible]
-    return existing if existing
-
-    for _root in @roots.reverse()
-      for viewPath in @paths.views.reverse()
-        for path in possible
-          try
-            fullPath: Path.join(_root, viewPath, "${path}.jade")
-            template: fs.statSync fullPath
-            @templateCache[possible]: fullPath
-            break
-          catch e
-            "noop"
-          break if @templateCache[possible]
-      break if @templateCache[possible]
-    @templateCache[possible]
-
-module.exports.N: {}
-module.exports.N.Controller: Controller
-module.exports.N.Handler: Handler
-
+module.exports.Controller = Controller
+module.exports.Handler = Handler
