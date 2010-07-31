@@ -4,6 +4,7 @@ Jade:         require 'jade'
 Path:         require 'path'
 Sherpa:       require 'sherpa/connect'
 RenderMixin:  require './render'
+ViewContext:  require './viewContext'
 url:          require 'url'
 
 sys: require 'sys'
@@ -12,6 +13,9 @@ startsWithAPeriod: /^\./
 
 # HEADER CONSTANTS
 CONTENT_TYPE: 'Content-Type'
+
+class ControllerViewContext extends ViewContext
+  @mixin: ViewContext.mixin
 
 class Handler
   constructor: (req, resp, params, controller, next) ->
@@ -60,7 +64,7 @@ class Handler
     else
       useLayout: false
 
-    context: {}
+    context: new ControllerViewContext(@request, opts)
     locals:  {
       data:   @data
       params: @params
@@ -154,6 +158,7 @@ class Controller
     @router[meth](route,opts).to(dispatcher)
 
 RenderMixin Controller
+Controller.ViewContext: ControllerViewContext
 
 module.exports.Controller = Controller
 module.exports.Handler = Handler

@@ -3,7 +3,7 @@ N: require('../../../index')
 
 posts: new N.Controller('posts')
 
-posts.GET "/", {}, (params) ->
+posts.GET "(/)", {}, (routeParams) ->
   @render_and_respond 'index'
 
 posts.GET "/:id", {}, (params) ->
