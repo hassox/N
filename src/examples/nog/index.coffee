@@ -1,3 +1,4 @@
+sys:     require('sys')
 Connect: require('connect')
 N: require '../../index'
 

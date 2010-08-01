@@ -3,8 +3,12 @@ N: require('../../../index')
 
 posts: new N.Controller('posts')
 
-posts.GET "(/)", {}, (routeParams) ->
-  @render_and_respond 'index'
+posts.GET "/", {}, (routeParams) ->
+  try
+    @render_and_respond 'index'
+  catch e
+    sys.puts e
+    throw e
 
 posts.GET "/:id", {}, (params) ->
   @data.food: @queryParams.food || "food"

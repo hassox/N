@@ -140,4 +140,5 @@ RenderMixin Wrapt
 Wrapt.instances: {}
 Wrapt.roots: ["${process.cwd}"]
 
+Wrapt.ViewContext = WraptContext
 module.exports = Wrapt

@@ -64,7 +64,7 @@ class Handler
     else
       useLayout: false
 
-    context: new ControllerViewContext(@request, opts)
+    context: new @controller.constructor.ViewContext(@request, opts)
     locals:  {
       data:   @data
       params: @params
@@ -152,7 +152,7 @@ class Controller
     self: this
     dispatcher: (req, resp, next) ->
       params:   req.sherpaResponse.params
-      handler:  new Handler(req, resp, params, self, next)
+      handler:  new self.Handler(req, resp, params, self, next)
       out:      fn.call(handler, params)
 
     @router[meth](route,opts).to(dispatcher)

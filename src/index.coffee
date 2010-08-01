@@ -1,7 +1,7 @@
 Connect:      require 'connect'
-Controller:   require('./lib/controller').Controller
-Handler:      require('./lib/controller').Handler
-Wrapt:        require('./lib/wrapt')
+Controller:   require('./N/controller').Controller
+Handler:      require('./N/controller').Handler
+Wrapt:        require('./N/wrapt')
 sys: require 'sys'
 
 N: {}
