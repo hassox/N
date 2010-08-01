@@ -5,6 +5,8 @@ Path:         require 'path'
 fs:           require 'fs'
 sys:          require 'sys'
 
+noFileRegexp: /No such file or directory/i
+
 # this.templateNames(name, opts) -> for a given name and options object, provide all available template names to search for.
 #     @example:
 #       this.templateNames('index', {format: 'xml'})
@@ -46,15 +48,12 @@ renderTemplate: (name, opts, context, locals) ->
           try
             fullPath: Path.join(_root, viewPath, "${path}.jade")
             template: fs.readFileSync(fullPath).toString('utf8')
-            sys.puts "TEMPLATE: ${template}"
             cache[key]: fullPath
             renderOptions.filename: fullPath
             return Jade.render(template, renderOptions)
           catch e
-            sys.puts e.message
-            # TODO: Add some logging and or re-raise at this point if it's a
-            # file not found
-            "noop"
+            if not e.message.match noFileRegexp
+              throw e
           break if cache[key]
       break if cache[key]
   throw new Error("Template not found ${name}")

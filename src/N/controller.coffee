@@ -70,6 +70,9 @@ class Handler
       params: @params
     }
 
+    ConnectUtils.merge(locals, opts.locals || {})
+    delete opts.locals
+
     try
       if useLayout and @request.layout
         @request.layout.content.main = @controller.renderTemplate name, opts, context, locals
@@ -137,6 +140,12 @@ class Controller
       ]
     }
 
+  mount: (app, path, opts) ->
+    @router.ANY(path,opts).matchPartially().to(app)
+
+  mountController: (app, path, opts) ->
+    @mount(app.connect(), path, opts);
+
   use: (args...) ->
     @stack.use(args...)
 
@@ -153,7 +162,7 @@ class Controller
     dispatcher: (req, resp, next) ->
       params:   req.sherpaResponse.params
       handler:  new self.Handler(req, resp, params, self, next)
-      out:      fn.call(handler, params)
+      fn.call(handler, params)
 
     @router[meth](route,opts).to(dispatcher)
 

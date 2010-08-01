@@ -20,7 +20,7 @@ Assuming the following setup:
 
 <pre><code>
 Connect: require('connect')
-N: require '../../index'
+N: require 'N'
 
 # Declare Mount controllers
 N.mountController require('./app/posts'), "/posts"
@@ -67,7 +67,7 @@ Controllers in N are small packages of (almost) self contained application goodn
 
 <pre><code>
 # In Coffeescript
-N: require('../../../index')
+N: require 'N'
 
 posts: new N.Controller('posts')
 
