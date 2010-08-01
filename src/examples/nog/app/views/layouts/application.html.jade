@@ -1,4 +1,7 @@
 !!! 5
 html
+  head
+    != this.javascriptIncludeTag('foo')
+    != this.cssIncludeTag('applicaton')
   body
-    != content.main
+    != this.yield('main')

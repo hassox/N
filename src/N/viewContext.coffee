@@ -1,3 +1,4 @@
+sys: require('sys')
 # A mixin helper.  This must be manually copied from one constructor function to another
 #
 # @example coffee-script
@@ -10,6 +11,7 @@
 mixin: (helpers...) ->
   for helper in helpers
     for prop, val of helper
+      sys.puts "Adding: ${prop}"
       this.prototype[prop]: val
 
 class ViewContext

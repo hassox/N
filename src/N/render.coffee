@@ -46,10 +46,12 @@ renderTemplate: (name, opts, context, locals) ->
           try
             fullPath: Path.join(_root, viewPath, "${path}.jade")
             template: fs.readFileSync(fullPath).toString('utf8')
+            sys.puts "TEMPLATE: ${template}"
             cache[key]: fullPath
             renderOptions.filename: fullPath
             return Jade.render(template, renderOptions)
           catch e
+            sys.puts e.message
             # TODO: Add some logging and or re-raise at this point if it's a
             # file not found
             "noop"

@@ -140,5 +140,8 @@ RenderMixin Wrapt
 Wrapt.instances: {}
 Wrapt.roots: ["${process.cwd}"]
 
+# Add in the view helpers for the WraptContext
+WraptContext.mixin require('./viewHelpers/wraptHelpers')
+
 Wrapt.ViewContext = WraptContext
 module.exports = Wrapt
