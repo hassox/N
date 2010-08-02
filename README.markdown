@@ -118,6 +118,7 @@ To render in a controller without a layout, pass the layout: false option.
 <pre><code>
   posts.GET "/", {}, (params) ->
     @render_and_respond "index", {layout: false}
+</code></pre>
 
 ### Mixins
 

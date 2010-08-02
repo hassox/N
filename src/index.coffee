@@ -31,10 +31,14 @@ N.mount: (app, path, opts) ->
   @router.ANY(path,opts).matchPartially().to(app)
 
 N.mountController: (app, path, opts) ->
-  @mount(app.connect(), path, opts);
+  @mount(app.connect(), path, opts)
 
 # A default stack
-N.use N.Wrapt, new N.Wrapt().connect({roots:[process.cwd()]})
+N.use N.Wrapt,                new N.Wrapt().connect({roots:[process.cwd()]})
+N.use Connect.methodOverride, new Connect.methodOverride()
+N.use Connect.cookieDecoder,  new Connect.cookieDecoder()
+N.use Connect.format,         new Connect.format()
+N.use Connect.responseTime,   new Connect.responseTime()
 
 module.exports: N
 
