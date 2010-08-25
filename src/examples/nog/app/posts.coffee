@@ -1,7 +1,6 @@
-sys: require('sys')
-N: require('../../../index')
-
-posts: new N.Controller('posts')
+sys:    require('sys')
+N:      require('../../../index')
+posts:  new N.Controller('posts')
 
 posts.GET "/", {}, (routeParams) ->
   try

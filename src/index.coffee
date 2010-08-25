@@ -4,34 +4,54 @@ Handler:      require('./N/controller').Handler
 Wrapt:        require('./N/wrapt')
 sys: require 'sys'
 
-N: {}
-N.Controller: Controller
-N.Handler:    Handler
-N.Wrapt:      Wrapt
+dupArray: (ary)->
+  ary.slice()
 
-N.primeStack: []
-N.stackInstance: {}
-N.router: new Sherpa.Connect()
+dupObject: (obj)->
+  dup: {}
+  for item,value of obj
+    dup[item] = value
+  dup
 
-N.use: (name, instance, path) ->
+use: (name, instance, path) ->
   @primeStack.push name
-  @stackInstance[name] = {'instance': instance, 'path': path}
+  @stackInstance[name]: { 'instance': instance, 'path': path }
 
-N.connect: () ->
-  server: Connect.createServer()
+class N
+  @Controller:    Controller
+  @Handler:       Handler
+  @Wrapt:         Wrapt
+  @primeStack:    []
+  @stackInstance: {}
+  @use:           use
 
-  for name in @primeStack
-    item: @stackInstance[name]
-    server.use(item.path || "/", item.instance)
+  constructor: (name) ->
+    @name:            name
+    @root:            new N.Controller('root')
+    @__defineGetter__ 'primeStack', ()->
+      @_primeStack ?= dupArray N.primeStack
 
-  server.use "/", @router.connect()
-  server
+    @__defineGetter__ 'stackInstance', ()->
+      @_stack_instance ?= dupObject N.stackInstance
 
-N.mount: (app, path, opts) ->
-  @router.ANY(path,opts).matchPartially().to(app)
+  use: use
 
-N.mountController: (app, path, opts) ->
-  @mount(app.connect(), path, opts)
+  connect: () ->
+    server: Connect.createServer()
+
+    for name in @primeStack
+      item: @stackInstance[name]
+      server.use(item.path || "/", item.instance)
+
+    server.use "/", @root.connect()
+    server
+
+  mount: (app, path, opts) ->
+    route: @root.ANY(path,opts).matchPartially()
+    if app.connect
+      route.to(app.connect())
+    else
+      route.to(app)
 
 # A default stack
 N.use N.Wrapt,                new N.Wrapt().connect({roots:[process.cwd()]})

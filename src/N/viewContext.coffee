@@ -11,7 +11,6 @@ sys: require('sys')
 mixin: (helpers...) ->
   for helper in helpers
     for prop, val of helper
-      sys.puts "Adding: ${prop}"
       this.prototype[prop]: val
 
 class ViewContext
