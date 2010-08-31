@@ -32,7 +32,7 @@ class N
       @_primeStack ?= dupArray N.primeStack
 
     @__defineGetter__ 'stackInstance', ()->
-      @_stack_instance ?= dupObject N.stackInstance
+      @_stackInstance ?= dupObject N.stackInstance
 
   use: use
 
